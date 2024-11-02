@@ -6,6 +6,7 @@ import os
 import time
 import logging
 import sys
+from datetime import datetime
 
 # Configurar logging
 logging.basicConfig(
@@ -22,8 +23,7 @@ def main():
     os.makedirs(download_path, exist_ok=True)
     logging.info(f'Directorio de descarga: {download_path}')
 
-    driver = None  # Inicializar driver aquí para su uso posterior
-
+    driver = None
     try:
         # Crear el driver con opciones específicas para GitHub Actions
         driver = Driver(uc=True, undetected=True, headless=True)
@@ -35,15 +35,22 @@ def main():
         driver.get("https://arbiscan.io/exportData?type=tokenholders&contract=0x9e64d3b9e8ec387a9a58ced80b71ed815f8d82b5&decimal=18")
         
         logging.info("Esperando que se cargue la página...")
-        time.sleep(30)  # Aumentar el tiempo de espera
+        time.sleep(15)
         
         # Esperar y hacer clic en el botón
-        download_button = WebDriverWait(driver, 30).until(
+        download_button = WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.ID, "ContentPlaceHolder1_btnSubmit"))
         )
         
+        time.sleep(5)
         logging.info("Intentando la descarga...")
-        driver.execute_script("arguments[0].click();", download_button)
+        
+        driver.execute_script("""        
+            var button = document.getElementById('ContentPlaceHolder1_btnSubmit');
+            if(button) {
+                button.click();
+            }
+        """)
         
         # Esperar a que se complete la descarga
         time.sleep(10)
@@ -51,12 +58,15 @@ def main():
         
     except Exception as e:
         logging.error(f"Error durante la ejecución: {str(e)}")
-        logging.error(f"URL actual: {driver.current_url if driver else 'No se pudo obtener la URL'}")
-        raise e
+        logging.error(f"URL actual: {driver.current_url if driver else 'No se pudo inicializar el driver'}")
         
     finally:
-        if driver:  # Verificar que el driver no sea None antes de cerrar
-            driver.save_screenshot("error.png")
+        if driver:
+            # Capturar la pantalla en cualquier caso
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            screenshot_path = os.path.join(download_path, f"error_{timestamp}.png")
+            driver.save_screenshot(screenshot_path)
+            logging.info(f"Captura de pantalla guardada en: {screenshot_path}")
             driver.quit()
         logging.info("Proceso finalizado")
 
