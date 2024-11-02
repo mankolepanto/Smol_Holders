@@ -30,7 +30,7 @@ jobs:
         pip install seleniumbase selenium
 
     - name: Run scraper
-      run: python path/to/scrap.py
+      run: python scrap.py
       
     - name: Upload results
       uses: actions/upload-artifact@v4  # Actualizado a v4
