@@ -6,6 +6,7 @@ import os
 import time
 import logging
 import sys
+from datetime import datetime
 
 # Configurar logging
 logging.basicConfig(
@@ -22,6 +23,7 @@ def main():
     os.makedirs(download_path, exist_ok=True)
     logging.info(f'Directorio de descarga: {download_path}')
 
+    driver = None
     try:
         # Crear el driver con opciones específicas para GitHub Actions
         driver = Driver(uc=True, undetected=True, headless=True)
@@ -43,7 +45,7 @@ def main():
         time.sleep(5)
         logging.info("Intentando la descarga...")
         
-        driver.execute_script("""
+        driver.execute_script("""        
             var button = document.getElementById('ContentPlaceHolder1_btnSubmit');
             if(button) {
                 button.click();
@@ -56,12 +58,16 @@ def main():
         
     except Exception as e:
         logging.error(f"Error durante la ejecución: {str(e)}")
-        driver.save_screenshot("error.png")
-        logging.error(f"URL actual: {driver.current_url}")
-        raise e
+        logging.error(f"URL actual: {driver.current_url if driver else 'No se pudo inicializar el driver'}")
         
     finally:
-        driver.quit()
+        if driver:
+            # Capturar la pantalla en cualquier caso
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            screenshot_path = os.path.join(download_path, f"error_{timestamp}.png")
+            driver.save_screenshot(screenshot_path)
+            logging.info(f"Captura de pantalla guardada en: {screenshot_path}")
+            driver.quit()
         logging.info("Proceso finalizado")
 
 if __name__ == "__main__":
