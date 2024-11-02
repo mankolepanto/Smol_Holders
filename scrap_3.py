@@ -2,9 +2,8 @@ from seleniumbase import Driver
 import time
 from selenium.webdriver.common.by import By
 
-
-driver = Driver (uc= True)
-
+# Activando Undetected Chrome Driver
+driver = Driver(uc=True, undetected=True, headless=False)
 try:
     driver.get ('https://arbiscan.io/exportData?type=tokenholders&contract=0x9e64d3b9e8ec387a9a58ced80b71ed815f8d82b5&decimal=18')
     driver.sleep (4)
