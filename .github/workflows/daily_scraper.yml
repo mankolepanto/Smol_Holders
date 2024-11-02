@@ -30,11 +30,19 @@ jobs:
         pip install seleniumbase selenium
 
     - name: Run scraper
-      run: python scrap.py
+      run: python scrap.py  # Cambia aquí a 'scrap.py'
       
     - name: Upload results
       uses: actions/upload-artifact@v4  # Actualizado a v4
       with:
         name: token-holders-data
         path: Smol_Holders/
+        retention-days: 5  # Opcional: especifica cuántos días mantener los artifacts
+
+    - name: Upload screenshot
+      if: failure()  # Solo subir la captura si falla el script
+      uses: actions/upload-artifact@v4
+      with:
+        name: error-screenshot
+        path: Smol_Holders/error_*.png  # Esto incluye cualquier archivo de captura de pantalla que empiece con "error_"
         retention-days: 5  # Opcional: especifica cuántos días mantener los artifacts
