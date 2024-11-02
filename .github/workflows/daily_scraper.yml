@@ -40,7 +40,6 @@ jobs:
         retention-days: 5  # Opcional: especifica cuántos días mantener los artifacts
 
     - name: Upload screenshot
-      if: failure()  # Solo subir la captura si falla el script
       uses: actions/upload-artifact@v4
       with:
         name: error-screenshot
