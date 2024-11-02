@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4    # También actualizamos checkout a v4
     
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5  # Actualizamos setup-python a v5
       with:
         python-version: '3.x'
     
@@ -33,7 +33,8 @@ jobs:
       run: python scraper.py
       
     - name: Upload results
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4  # Actualizado a v4
       with:
         name: token-holders-data
         path: Smol_Holders/
+        retention-days: 5  # Opcional: especifica cuántos días mantener los artifacts
