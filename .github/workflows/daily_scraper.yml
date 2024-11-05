@@ -1,58 +1,51 @@
-name: CI build
+name: Selenium Web Scraping
 
 on:
-  pull_request:
-  push:
+  schedule:
+    - cron: '0 */6 * * *'  # Runs every 6 hours
+  workflow_dispatch:  # Allows manual trigger
 
 jobs:
-  build:
-
-    env:
-      PY_COLORS: "1"
+  scrape:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      max-parallel: 5
-      matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip wheel setuptools
-        pip install -r requirements.txt
-    - name: Install SeleniumBase
-      run: |
-        pip install .
-    - name: Lint with flake8
-      run: |
-        pip install flake8
-        # Stop the build if there are flake8 issues
-        flake8 . --count --show-source --statistics --exclude=temp
-    - name: Install Chrome
-      run: |
-        sudo apt install google-chrome-stable
-    - name: Check the console scripts interface
-      run: |
-        seleniumbase
-        sbase
-    - name: Install chromedriver
-      run: |
-        seleniumbase install chromedriver
-    - name: Make sure pytest is working
-      run: |
-        echo "def test_1(): pass" > nothing.py
-        pytest nothing.py
-    - name: Make sure nosetests is working
-      run: |
-        echo "def test_2(): pass" > nothing2.py
-        nosetests nothing2.py
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
 
-    - name: Run scrap --browser=chrome --headless
-      run: |
-        pytest scrap_3.py --browser=chrome --headless -v -s --junit-xml=junit/test-results.xml
+      - name: Install Chrome
+        run: |
+          sudo apt install google-chrome-stable
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install seleniumbase selenium
+
+      - name: Install chromedriver
+        run: |
+          seleniumbase install chromedriver    
+
+      - name: Create downloads directory 
+        run: mkdir -p downloads
+
+      - name: Run Selenium script
+        run: python scrap_3.py --browser=chrome --headless -v -s
+
+      - name: Upload screenshot
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: screenshots
+          path: error.png
+
+      - name: Upload downloaded files
+        uses: actions/upload-artifact@v3
+        if: success()
+        with:
+          name: downloaded-files
+          path: downloads/

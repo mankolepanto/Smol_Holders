@@ -1,0 +1,51 @@
+name: Selenium Web Scraping
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Runs every 6 hours
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+    
+    - name: Install Chrome
+      run: |
+        sudo apt install google-chrome-stable
+
+    
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install seleniumbase selenium
+    
+    - name: Install chromedriver
+      run: |
+          seleniumbase install chromedriver    
+    
+    - name: Create downloads directory 
+      run: mkdir -p downloads
+    
+    - name: Run Selenium script --browser=chrome --headless
+      run: python your_script.py --browser=chrome --headless -v -s
+    
+    - name: Upload screenshot
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: screenshots
+        path: error.png
+    
+    - name: Upload downloaded files
+      uses: actions/upload-artifact@v3
+      if: success()
+      with:
+        name: downloaded-files
+        path: downloads/
