@@ -1,55 +1,58 @@
-name: Daily Token Holders Scraper
+name: CI build
 
 on:
-  schedule:
-    - cron: '0 0 * * *'  # Ejecutar a las 00:00 UTC cada día
-  workflow_dispatch:      # Permite ejecutar manualmente desde GitHub
+  pull_request:
+  push:
 
 jobs:
-  scrape:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4    # También actualizamos checkout a v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5  # Actualizamos setup-python a v5
-      with:
-        python-version: '3.x'
-    
-    - name: Install Chrome
-      run: |
-        wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-        sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
-        sudo apt-get update
-        sudo apt-get install -y google-chrome-stable
-    
-    - name: Install Xvfb
-      run: sudo apt-get install -y xvfb  # Instalar Xvfb
+  build:
 
+    env:
+      PY_COLORS: "1"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install seleniumbase selenium
-
-    - name: Run Xvfb
+        python -m pip install --upgrade pip wheel setuptools
+        pip install -r requirements.txt
+    - name: Install SeleniumBase
       run: |
-        Xvfb :99 -screen 0 1920x1080x24 &  # Inicia el servidor Xvfb en segundo plano
-        export DISPLAY=:99                   # Exporta la variable DISPLAY para que las aplicaciones gráficas la utilicen
+        pip install .
+    - name: Lint with flake8
+      run: |
+        pip install flake8
+        # Stop the build if there are flake8 issues
+        flake8 . --count --show-source --statistics --exclude=temp
+    - name: Install Chrome
+      run: |
+        sudo apt install google-chrome-stable
+    - name: Check the console scripts interface
+      run: |
+        seleniumbase
+        sbase
+    - name: Install chromedriver
+      run: |
+        seleniumbase install chromedriver
+    - name: Make sure pytest is working
+      run: |
+        echo "def test_1(): pass" > nothing.py
+        pytest nothing.py
+    - name: Make sure nosetests is working
+      run: |
+        echo "def test_2(): pass" > nothing2.py
+        nosetests nothing2.py
 
-    - name: Run scraper
-      run: python scrap_3.py  # Cambia aquí a 'scrap.py'
-      
-    - name: Upload results
-      uses: actions/upload-artifact@v4  # Actualizado a v4
-      with:
-        name: token-holders-data
-        path: Smol_Holders/
-        retention-days: 5  # Opcional: especifica cuántos días mantener los artifacts
-
-    - name: Upload screenshot
-      uses: actions/upload-artifact@v4
-      with:
-        name: error-screenshot
-        path: Smol_Holders/error_*.png  # Esto incluye cualquier archivo de captura de pantalla que empiece con "error_"
-        retention-days: 5  # Opcional: especifica cuántos días mantener los artifacts
+    - name: Run scrap --browser=chrome --headless
+      run: |
+        pytest scrap_3.py --browser=chrome --headless -v -s --junit-xml=junit/test-results.xml
